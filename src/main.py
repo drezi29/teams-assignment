@@ -17,8 +17,8 @@ def get_db():
         db.close()
 
 @app.get("/experiments/")
-def read_experiments(response: Response, limit: int = 100, db: Session = Depends(get_db)):
-    experiments = crud.get_experiments(db, limit)
+def read_experiments(response: Response, team_name: str | None = None, limit: int = 100, db: Session = Depends(get_db)):
+    experiments = crud.get_experiments(db, team_name, limit)
     if not experiments:
         response.status_code = status.HTTP_204_NO_CONTENT
     return experiments
