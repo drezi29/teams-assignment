@@ -1,5 +1,6 @@
-from fastapi import Depends, FastAPI, Response, status, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Response, Request, status, Query
 from sqlalchemy.orm import Session
+from typing import Annotated
 
 from .database import SessionLocal, engine
 from . import crud, models
@@ -24,8 +25,8 @@ def read_experiments(response: Response, team_name: str | None = None, limit: in
     return experiments
 
 @app.post("/experiments/")
-def create_experiment(description: str, sample_ratio: float, allowed_team_assignments: int, db: Session = Depends(get_db)):
-    experiment = crud.create_experiment(db, description, sample_ratio, allowed_team_assignments)
+def create_experiment(description: str, sample_ratio: float, allowed_team_assignments: int, team_ids: Annotated[list[str], Query()], db: Session = Depends(get_db)):
+    experiment = crud.create_experiment(db, description, sample_ratio, allowed_team_assignments, team_ids)
     return experiment
 
 @app.get("/teams/")
@@ -40,10 +41,6 @@ def create_team(name: str, db: Session = Depends(get_db)):
     team = crud.create_team(db, name)
     return team
 
-@app.post("/experiments/assign-team")
-def create_assignment(team_id: str, experiment_id: str, db: Session = Depends(get_db)):
-    assignment = crud.create_assignment(db, team_id, experiment_id)
-    return assignment
 
 
 
