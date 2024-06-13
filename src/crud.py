@@ -1,13 +1,13 @@
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import selectinload, Session
 import uuid
 
 from . import models
 
 
 def get_experiments(db: Session, limit: int = 100):
-    return db.query(models.Experiment).limit(limit).all()
+    return db.query(models.Experiment).options(selectinload(models.Experiment.teams).load_only(models.Team.id, models.Team.name)).limit(limit).all()
 
 
 def create_experiment(db: Session, description: str, sample_ratio: float, allowed_team_assignments: int):
@@ -24,7 +24,7 @@ def create_experiment(db: Session, description: str, sample_ratio: float, allowe
 
 
 def get_teams(db: Session, limit: int = 100):
-    return db.query(models.Team).limit(limit).all()
+    return db.query(models.Team).options(selectinload(models.Team.experiments).load_only(models.Experiment.id, models.Experiment.description)).limit(limit).all()
 
 
 def create_team(db: Session, name: str):
