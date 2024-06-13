@@ -28,6 +28,10 @@ def read_experiments(response: Response, team_name: str | None = None, limit: in
 def create_experiment(description: str, sample_ratio: float, allowed_team_assignments: int, team_ids: Annotated[list[str], Query()], db: Session = Depends(get_db)):
     return crud.create_experiment(db, description, sample_ratio, allowed_team_assignments, team_ids)
 
+@app.put("/experiments/{experiment_id}/teams")
+def update_assignments(experiment_id: str, team_ids: Annotated[list[str], Query()], db: Session = Depends(get_db)):
+    return crud.update_assignments(db, experiment_id, team_ids)
+    
 @app.get("/teams/")
 def read_teams(response: Response, limit: int = 100, db: Session = Depends(get_db)):
     teams = crud.get_teams(db, limit)

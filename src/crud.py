@@ -49,6 +49,44 @@ def create_experiment(db: Session, description: str, sample_ratio: float, allowe
     
     return {"message": "Experiment created successfully!"}
 
+def update_assignments(db: Session, experiment_id: str, team_ids: list[str]):
+    experiment = db.query(models.Experiment).filter(models.Experiment.id == experiment_id).first()
+    if not experiment:
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    
+    set_team_ids = set(team_ids)
+    teams = db.query(models.Team).filter(models.Team.id.in_(set_team_ids)).all()
+    if len(teams) != len(set_team_ids):
+        not_found_teams_ids = set_team_ids - set({str(team.id) for team in teams})
+        raise HTTPException(status_code=404, detail=f"Team(s) not found: {not_found_teams_ids}")
+
+    allowed_team_assignments = experiment.allowed_team_assignments
+    if allowed_team_assignments != len(set_team_ids):
+        raise HTTPException(status_code=400, detail=f"That experiment requires {allowed_team_assignments} team(s) to assign")
+
+    current_assigned_teams = set({str(team.id) for team in experiment.teams})
+    if current_assigned_teams == set(team_ids):
+        raise HTTPException(status_code=400, detail=f"Assignment exists")
+    else:
+        set_to_assign = set(team_ids) - current_assigned_teams
+        teams_to_assign = db.query(models.Team).filter(models.Team.id.in_(set_to_assign)).all()
+        set_to_unasign = current_assigned_teams - set(team_ids)
+        teams_to_unassign = db.query(models.Team).filter(models.Team.id.in_(set_to_unasign)).all()
+
+        for team in teams_to_assign:
+            experiment.teams.append(team)
+        
+        for team in teams_to_unassign:
+            experiment.teams.remove(team)
+               
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(status_code=400, detail="Invalid data")
+    
+    return {"message": "Assignment updated successfully!"}
+
 
 def get_teams(db: Session, limit: int = 100):
     return db.query(models.Team).options(selectinload(models.Team.experiments).load_only(models.Experiment.id, models.Experiment.description)).limit(limit).all()
