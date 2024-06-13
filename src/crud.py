@@ -4,7 +4,7 @@ from sqlalchemy.orm import selectinload, contains_eager, Session
 import uuid
 
 from . import models
-
+from .constants import MIN_ALLOWED_TEAMS, MAX_ALLOWED_TEAMS
 
 def get_experiments(db: Session, team_name: str | None, limit: int = 100):
     query = db.query(models.Experiment)\
@@ -18,6 +18,9 @@ def get_experiments(db: Session, team_name: str | None, limit: int = 100):
 
 
 def create_experiment(db: Session, description: str, sample_ratio: float, allowed_team_assignments: int):
+    if not (MIN_ALLOWED_TEAMS <= allowed_team_assignments <= MAX_ALLOWED_TEAMS):
+        raise HTTPException(status_code=400, detail=f"Value of allowed team assignments has to be between {MIN_ALLOWED_TEAMS} and {MAX_ALLOWED_TEAMS}")
+    
     db_experiment = models.Experiment(
         id=str(uuid.uuid4()),
         description=description,
