@@ -30,13 +30,13 @@ def create_experiment(db: Session, description: str, sample_ratio: float, allowe
     db.add(db_experiment)
 
     set_team_ids = set(team_ids)
+    if allowed_team_assignments != len(set_team_ids):
+        raise HTTPException(status_code=400, detail=f"That experiment requires {allowed_team_assignments} team(s) to assign")
+
     teams = db.query(models.Team).filter(models.Team.id.in_(set_team_ids)).all()
     if len(teams) != len(set_team_ids):
         not_found_teams_ids = set_team_ids - set({str(team.id) for team in teams})
         raise HTTPException(status_code=404, detail=f"Team(s) not found: {not_found_teams_ids}")
-
-    if allowed_team_assignments != len(set_team_ids):
-        raise HTTPException(status_code=400, detail=f"That experiment requires {allowed_team_assignments} team(s) to assign")
 
     for team in teams:
         db_experiment.teams.append(team)
@@ -49,20 +49,21 @@ def create_experiment(db: Session, description: str, sample_ratio: float, allowe
     
     return {"message": "Experiment created successfully!"}
 
+
 def update_assignments(db: Session, experiment_id: str, team_ids: list[str]):
     experiment = db.query(models.Experiment).filter(models.Experiment.id == experiment_id).first()
     if not experiment:
         raise HTTPException(status_code=404, detail="Experiment not found")
     
     set_team_ids = set(team_ids)
+    allowed_team_assignments = experiment.allowed_team_assignments
+    if allowed_team_assignments != len(set_team_ids):
+        raise HTTPException(status_code=400, detail=f"That experiment requires {allowed_team_assignments} team(s) to assign")
+
     teams = db.query(models.Team).filter(models.Team.id.in_(set_team_ids)).all()
     if len(teams) != len(set_team_ids):
         not_found_teams_ids = set_team_ids - set({str(team.id) for team in teams})
         raise HTTPException(status_code=404, detail=f"Team(s) not found: {not_found_teams_ids}")
-
-    allowed_team_assignments = experiment.allowed_team_assignments
-    if allowed_team_assignments != len(set_team_ids):
-        raise HTTPException(status_code=400, detail=f"That experiment requires {allowed_team_assignments} team(s) to assign")
 
     current_assigned_teams = set({str(team.id) for team in experiment.teams})
     if current_assigned_teams == set(team_ids):
