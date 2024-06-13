@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import selectinload, contains_eager, Session
+from sqlalchemy.orm import selectinload, joinedload, Session
 import uuid
 
 from . import models
@@ -9,7 +9,7 @@ from .constants import MIN_ALLOWED_TEAMS, MAX_ALLOWED_TEAMS
 def get_experiments(db: Session, team_name: str | None, limit: int = 100):
     query = db.query(models.Experiment)\
         .join(models.Experiment.teams)\
-        .options(contains_eager(models.Experiment.teams).load_only(models.Team.id, models.Team.name))\
+        .options(joinedload(models.Experiment.teams).load_only(models.Team.id, models.Team.name))\
     
     if team_name:
         query = query.filter(models.Team.name == team_name)
