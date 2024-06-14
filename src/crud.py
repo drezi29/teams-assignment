@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload, joinedload, Session
 import uuid
@@ -9,11 +10,22 @@ from .constants import MIN_ALLOWED_TEAMS, MAX_ALLOWED_TEAMS
 def get_experiments(db: Session, team_name: str | None, limit: int = 100):
     query = db.query(models.Experiment)\
         .join(models.Experiment.teams)\
-        .options(joinedload(models.Experiment.teams).load_only(models.Team.id, models.Team.name))\
+        .options(
+            joinedload(models.Experiment.teams).load_only(models.Team.id, models.Team.name),
+        )
     
     if team_name:
-        query = query.filter(models.Team.name == team_name)
+        filtered_team = db.query(models.Team).filter(models.Team.name == team_name).first()
+        if not filtered_team:
+            raise HTTPException(status_code=404, detail="Team with this name not found")
 
+        query = query.filter(
+            or_(
+                models.Team.id == filtered_team.id,
+                models.Team.parent_team == filtered_team.id
+            )
+        )        
+    
     return query.limit(limit).all()
 
 
@@ -93,11 +105,17 @@ def get_teams(db: Session, limit: int = 100):
     return db.query(models.Team).options(selectinload(models.Team.experiments).load_only(models.Experiment.id, models.Experiment.description)).limit(limit).all()
 
 
-def create_team(db: Session, name: str):
+def create_team(db: Session, name: str, parent_team_id: str | None):
+    parent_team_from_db = db.query(models.Team).filter(models.Team.id == parent_team_id).first()
+    if not parent_team_from_db:
+        raise HTTPException(status_code=404, detail="Parent team not found")
+    
     db_team = models.Team(
         id=str(uuid.uuid4()),
-        name=name
+        name=name,
+        parent_team=parent_team_id
     )
+
     db.add(db_team)
     db.commit()
     db.refresh(db_team)

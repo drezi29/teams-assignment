@@ -40,8 +40,8 @@ def read_teams(response: Response, limit: int = 100, db: Session = Depends(get_d
     return teams
 
 @app.post("/teams/")
-def create_team(name: str, db: Session = Depends(get_db)):
-    team = crud.create_team(db, name)
+def create_team(name: str, parent_team_id: str | None = None, db: Session = Depends(get_db)):
+    team = crud.create_team(db, name, parent_team_id)
     return team
 
 
