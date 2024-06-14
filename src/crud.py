@@ -4,20 +4,21 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload, joinedload, Session
 import uuid
 
-from . import models
-from .constants import MIN_ALLOWED_TEAMS, MAX_ALLOWED_TEAMS
+from . import errors, models
+from .config import MIN_ALLOWED_TEAMS, MAX_ALLOWED_TEAMS
 
-def get_experiments(db: Session, team_name: str | None, limit: int = 100):
+
+def get_experiments(team_name: str | None, limit: int | None, db: Session):
     query = db.query(models.Experiment)\
         .join(models.Experiment.teams)\
         .options(
-            joinedload(models.Experiment.teams).load_only(models.Team.id, models.Team.name),
+            joinedload(models.Experiment.teams).load_only(models.Team.id, models.Team.name)
         )
     
     if team_name:
         filtered_team = db.query(models.Team).filter(models.Team.name == team_name).first()
         if not filtered_team:
-            raise HTTPException(status_code=404, detail="Team with this name not found")
+            raise HTTPException(status_code=404, detail=errors.TEAM_BY_NAME_NOT_FOUND)
 
         query = query.filter(
             or_(
@@ -64,7 +65,8 @@ def create_experiment(db: Session, description: str, sample_ratio: float, allowe
         db.rollback()
         raise HTTPException(status_code=400, detail="Invalid data")
     
-    return {"message": "Experiment created successfully!"}
+    db.refresh(db_experiment)
+    return db_experiment
 
 
 def update_assignments(db: Session, experiment_id: str, team_ids: list[str]):
