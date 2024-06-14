@@ -47,9 +47,10 @@ def update_assignments(experiment_id: str, team_ids: Annotated[list[str], Query(
 
 @app.get("/teams/")
 def read_teams(response: Response, limit: int = 100, db: Session = Depends(get_db)):
-    teams = crud.get_teams(db, limit)
+    teams = crud.get_teams(limit, db)
     if not teams:
         response.status_code = status.HTTP_204_NO_CONTENT
+        return []
     return teams
 
 

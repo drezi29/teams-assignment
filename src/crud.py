@@ -9,11 +9,14 @@ from .config import MIN_ALLOWED_TEAMS, MAX_ALLOWED_TEAMS
 
 
 def get_experiments(team_name: str | None, limit: int | None, db: Session):
-    query = db.query(models.Experiment)\
-        .join(models.Experiment.teams)\
+    query = (
+        db.query(models.Experiment)
+        .join(models.Experiment.teams)
         .options(
-            joinedload(models.Experiment.teams).load_only(models.Team.id, models.Team.name)
+            joinedload(models.Experiment.teams)
+            .load_only(models.Team.id, models.Team.name)
         )
+    )
     
     if team_name:
         filtered_team = db.query(models.Team).filter(models.Team.name == team_name).first()
@@ -113,8 +116,18 @@ def update_assignments(db: Session, experiment_id: str, team_ids: list[str]):
     return {"message": "Assignment updated successfully!"}
 
 
-def get_teams(db: Session, limit: int = 100):
-    return db.query(models.Team).options(selectinload(models.Team.experiments).load_only(models.Experiment.id, models.Experiment.description)).limit(limit).all()
+def get_teams(limit: int, db: Session):
+    query = (
+        db.query(models.Team)
+        .options(
+            selectinload(models.Team.experiments)
+            .load_only(models.Experiment.id, models.Experiment.description)
+        )
+        .limit(limit)
+        .all()
+    )
+
+    return query
 
 
 def create_team(db: Session, name: str, parent_team_id: str | None):
