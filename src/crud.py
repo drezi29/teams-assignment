@@ -46,11 +46,16 @@ def create_experiment(db: Session, description: str, sample_ratio: float, allowe
         raise HTTPException(status_code=400, detail=f"That experiment requires {allowed_team_assignments} team(s) to assign")
 
     teams = db.query(models.Team).filter(models.Team.id.in_(set_team_ids)).all()
+    set_teams_ids_str = set({str(team.id) for team in teams})
     if len(teams) != len(set_team_ids):
-        not_found_teams_ids = set_team_ids - set({str(team.id) for team in teams})
+        not_found_teams_ids = set_team_ids - set_teams_ids_str
         raise HTTPException(status_code=404, detail=f"Team(s) not found: {not_found_teams_ids}")
 
     for team in teams:
+        if str(team.parent_team) in set_teams_ids_str:
+            raise HTTPException(status_code=404, detail=f"Cannot assign a child of the team to the same experiment")
+    
+    for team in teams:    
         db_experiment.teams.append(team)
 
     try:
@@ -73,30 +78,35 @@ def update_assignments(db: Session, experiment_id: str, team_ids: list[str]):
         raise HTTPException(status_code=400, detail=f"That experiment requires {allowed_team_assignments} team(s) to assign")
 
     teams = db.query(models.Team).filter(models.Team.id.in_(set_team_ids)).all()
+    set_teams_ids_str = set({str(team.id) for team in teams})
     if len(teams) != len(set_team_ids):
-        not_found_teams_ids = set_team_ids - set({str(team.id) for team in teams})
+        not_found_teams_ids = set_team_ids - set_teams_ids_str
         raise HTTPException(status_code=404, detail=f"Team(s) not found: {not_found_teams_ids}")
 
     current_assigned_teams = set({str(team.id) for team in experiment.teams})
     if current_assigned_teams == set(team_ids):
         raise HTTPException(status_code=400, detail=f"Assignment exists")
-    else:
-        set_to_assign = set(team_ids) - current_assigned_teams
-        teams_to_assign = db.query(models.Team).filter(models.Team.id.in_(set_to_assign)).all()
-        set_to_unasign = current_assigned_teams - set(team_ids)
-        teams_to_unassign = db.query(models.Team).filter(models.Team.id.in_(set_to_unasign)).all()
+    
+    for team in teams:
+        if str(team.parent_team) in set_teams_ids_str:
+            raise HTTPException(status_code=404, detail=f"Cannot assign a child of the team to the same experiment")
+    
+    set_to_assign = set(team_ids) - current_assigned_teams
+    teams_to_assign = db.query(models.Team).filter(models.Team.id.in_(set_to_assign)).all()
+    set_to_unasign = current_assigned_teams - set(team_ids)
+    teams_to_unassign = db.query(models.Team).filter(models.Team.id.in_(set_to_unasign)).all()
 
-        for team in teams_to_assign:
-            experiment.teams.append(team)
-        
-        for team in teams_to_unassign:
-            experiment.teams.remove(team)
-               
-        try:
-            db.commit()
-        except IntegrityError:
-            db.rollback()
-            raise HTTPException(status_code=400, detail="Invalid data")
+    for team in teams_to_assign:
+        experiment.teams.append(team)
+    
+    for team in teams_to_unassign:
+        experiment.teams.remove(team)
+            
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid data")
     
     return {"message": "Assignment updated successfully!"}
 
