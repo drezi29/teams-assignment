@@ -5,6 +5,7 @@ from uuid import UUID
 
 from . import crud, models
 from .crud.team import create_team, get_teams 
+from .crud.experiment import create_experiment, get_experiments, update_assignments
 from .database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
@@ -28,7 +29,7 @@ def read_experiments(
     db: Session = Depends(get_db)
 ):
     
-    experiments = crud.get_experiments(team_name, limit, db)
+    experiments = crud.experiment.get_experiments(team_name, limit, db)
     if not experiments:
         response.status_code = status.HTTP_204_NO_CONTENT
         return []
@@ -44,12 +45,12 @@ def create_experiment(
     db: Session = Depends(get_db)
 ):
     
-    return crud.create_experiment(db, description, sample_ratio, allowed_team_assignments, team_ids)
+    return crud.experiment.create_experiment(db, description, sample_ratio, allowed_team_assignments, team_ids)
 
 
 @app.put("/experiments/{experiment_id}/teams")
 def update_assignments(experiment_id: str, team_ids: Annotated[list[str], Query()], db: Session = Depends(get_db)):
-    return crud.update_assignments(db, experiment_id, team_ids)
+    return crud.experiment.update_assignments(db, experiment_id, team_ids)
 
 
 @app.get("/teams/")
@@ -73,5 +74,5 @@ def create_team(
     db: Session = Depends(get_db)
 ):
 
-    team = crud.team.create_team(db, name, parent_team_id)
+    team = crud.team.create_team(name, parent_team_id, db)
     return team
