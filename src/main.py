@@ -20,7 +20,13 @@ def get_db():
 
 
 @app.get("/experiments/")
-def read_experiments(response: Response, team_name: str | None = None, limit: int = 100, db: Session = Depends(get_db)):
+def read_experiments(
+    response: Response,
+    team_name: str | None = None,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    
     experiments = crud.get_experiments(team_name, limit, db)
     if not experiments:
         response.status_code = status.HTTP_204_NO_CONTENT
@@ -46,7 +52,12 @@ def update_assignments(experiment_id: str, team_ids: Annotated[list[str], Query(
 
 
 @app.get("/teams/")
-def read_teams(response: Response, limit: int = 100, db: Session = Depends(get_db)):
+def read_teams(
+    response: Response,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    
     teams = crud.get_teams(limit, db)
     if not teams:
         response.status_code = status.HTTP_204_NO_CONTENT
@@ -55,6 +66,11 @@ def read_teams(response: Response, limit: int = 100, db: Session = Depends(get_d
 
 
 @app.post("/teams/")
-def create_team(name: str, parent_team_id: str | None = None, db: Session = Depends(get_db)):
+def create_team(
+    name: str = Body(...),
+    parent_team_id: UUID | None = Body(None),
+    db: Session = Depends(get_db)
+):
+
     team = crud.create_team(db, name, parent_team_id)
     return team

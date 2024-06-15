@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload, joinedload, Session
 import uuid
 
-from . import errors, models
+from . import messages, models
 from .config import MIN_ALLOWED_TEAMS, MAX_ALLOWED_TEAMS
 
 
@@ -21,7 +21,7 @@ def get_experiments(team_name: str | None, limit: int | None, db: Session):
     if team_name:
         filtered_team = db.query(models.Team).filter(models.Team.name == team_name).first()
         if not filtered_team:
-            raise HTTPException(status_code=404, detail=errors.TEAM_BY_NAME_NOT_FOUND)
+            raise HTTPException(status_code=404, detail=messages.TEAM_BY_NAME_NOT_FOUND_ERROR)
 
         query = query.filter(
             or_(
@@ -131,9 +131,10 @@ def get_teams(limit: int, db: Session):
 
 
 def create_team(db: Session, name: str, parent_team_id: str | None):
-    parent_team_from_db = db.query(models.Team).filter(models.Team.id == parent_team_id).first()
-    if not parent_team_from_db:
-        raise HTTPException(status_code=404, detail="Parent team not found")
+    if parent_team_id:
+        parent_team_from_db = db.query(models.Team).filter(models.Team.id == parent_team_id).first()
+        if not parent_team_from_db:
+            raise HTTPException(status_code=404, detail=messages.PARENT_TEAM_NOT_FOUND_ERROR)
     
     db_team = models.Team(
         id=str(uuid.uuid4()),
@@ -144,4 +145,10 @@ def create_team(db: Session, name: str, parent_team_id: str | None):
     db.add(db_team)
     db.commit()
     db.refresh(db_team)
-    return db_team
+
+    return {
+        "message": messages.TEAM_CREATED_SUCCESFULLY_MSG,
+        "team_id": str(db_team.id),
+        "name": db_team.name,
+        "parent_team_id": str(db_team.parent_team) if db_team.parent_team else None
+    }
