@@ -4,6 +4,7 @@ from typing import Annotated, List
 from uuid import UUID
 
 from . import crud, models
+from .crud.team import create_team, get_teams 
 from .database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
@@ -58,7 +59,7 @@ def read_teams(
     db: Session = Depends(get_db)
 ):
     
-    teams = crud.get_teams(limit, db)
+    teams = crud.team.get_teams(limit, db)
     if not teams:
         response.status_code = status.HTTP_204_NO_CONTENT
         return []
@@ -72,5 +73,5 @@ def create_team(
     db: Session = Depends(get_db)
 ):
 
-    team = crud.create_team(db, name, parent_team_id)
+    team = crud.team.create_team(db, name, parent_team_id)
     return team

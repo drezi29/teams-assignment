@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import selectinload, joinedload, Session
+from sqlalchemy.orm import joinedload, Session
 import uuid
 
 from . import messages, models
@@ -35,7 +35,12 @@ def get_experiments(team_name: str | None, limit: int | None, db: Session):
 
 def create_experiment(db: Session, description: str, sample_ratio: float, allowed_team_assignments: int, team_ids: list[str]):
     if not (MIN_ALLOWED_TEAMS <= allowed_team_assignments <= MAX_ALLOWED_TEAMS):
-        raise HTTPException(status_code=400, detail=f"Value of allowed team assignments has to be between {MIN_ALLOWED_TEAMS} and {MAX_ALLOWED_TEAMS}")
+        raise HTTPException(
+            status_code=400, 
+            detail=messages.VALUE_OF_ALLOWED_TEAM_ASSIGNMNETS_RANGE_ERROR.format(
+                min=MIN_ALLOWED_TEAMS, max=MAX_ALLOWED_TEAMS
+            )
+        )
     
     db_experiment = models.Experiment(
         id=str(uuid.uuid4()),
@@ -114,41 +119,3 @@ def update_assignments(db: Session, experiment_id: str, team_ids: list[str]):
         raise HTTPException(status_code=400, detail="Invalid data")
     
     return {"message": "Assignment updated successfully!"}
-
-
-def get_teams(limit: int, db: Session):
-    query = (
-        db.query(models.Team)
-        .options(
-            selectinload(models.Team.experiments)
-            .load_only(models.Experiment.id, models.Experiment.description)
-        )
-        .limit(limit)
-        .all()
-    )
-
-    return query
-
-
-def create_team(db: Session, name: str, parent_team_id: str | None):
-    if parent_team_id:
-        parent_team_from_db = db.query(models.Team).filter(models.Team.id == parent_team_id).first()
-        if not parent_team_from_db:
-            raise HTTPException(status_code=404, detail=messages.PARENT_TEAM_NOT_FOUND_ERROR)
-    
-    db_team = models.Team(
-        id=str(uuid.uuid4()),
-        name=name,
-        parent_team=parent_team_id
-    )
-
-    db.add(db_team)
-    db.commit()
-    db.refresh(db_team)
-
-    return {
-        "message": messages.TEAM_CREATED_SUCCESFULLY_MSG,
-        "team_id": str(db_team.id),
-        "name": db_team.name,
-        "parent_team_id": str(db_team.parent_team) if db_team.parent_team else None
-    }
