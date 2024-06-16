@@ -62,7 +62,7 @@ def read_teams(
     db: Session = Depends(get_db)
 ):
     
-    teams = crud.team.get_teams(limit, db)
+    teams = crud.team.get_teams(db, limit)
     if not teams:
         response.status_code = status.HTTP_204_NO_CONTENT
         return []
@@ -77,7 +77,7 @@ def create_team(
     db: Session = Depends(get_db)
 ):
 
-    team = crud.team.create_team(name, parent_team_id, db)
+    team = crud.team.create_team(db, name, parent_team_id)
     response.status_code = status.HTTP_201_CREATED
     return team
 

@@ -8,12 +8,11 @@ from ..messages import (
     PARENT_TEAM_NOT_FOUND_ERROR,
     TEAM_CREATED_SUCCESFULLY_MSG,
     TEAM_WITH_NAME_EXISTS,
-    UNEXPECTED_ERROR
 )
 from ..models import Experiment, Team
 
 
-def get_teams(limit: int, db: Session):
+def get_teams(db: Session, limit: int):
     query = (
         db.query(Team)
         .options(
@@ -28,9 +27,7 @@ def get_teams(limit: int, db: Session):
     return query
 
 
-def create_team(name: str, parent_team_id: str | None, db: Session):
-    check_if_parent_team_exists(parent_team_id, db)
-    check_if_name_unique(name, db)
+def create_team(db: Session, name: str, parent_team_id: str | None):
     db_team = Team(
         id=str(uuid.uuid4()),
         name=name,
@@ -40,9 +37,15 @@ def create_team(name: str, parent_team_id: str | None, db: Session):
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=UNEXPECTED_ERROR)
+        error_info = str(e.orig)
+        if 'violates unique constraint "teams_name_key"' in error_info:
+            raise HTTPException(status_code=400, detail=TEAM_WITH_NAME_EXISTS)
+        elif 'violates foreign key constraint "teams_parent_team_fkey' in error_info:
+            raise HTTPException(status_code=404, detail=PARENT_TEAM_NOT_FOUND_ERROR)
+        else:
+            raise HTTPException(status_code=400, detail='IntegrityError occurred: {error_info}')
     
     db.refresh(db_team)
 
@@ -51,16 +54,4 @@ def create_team(name: str, parent_team_id: str | None, db: Session):
         "team_id": str(db_team.id),
     }
 
-
-def check_if_parent_team_exists(parent_team_id: str, db: Session):
-    if parent_team_id:
-        parent_team_from_db = db.query(Team).filter(Team.id == parent_team_id).first()
-        if not parent_team_from_db:
-            raise HTTPException(status_code=404, detail=PARENT_TEAM_NOT_FOUND_ERROR)
-
-
-def check_if_name_unique(name: str, db: Session):
-    teams_with_same_name = db.query(Team).filter(Team.name == name).first()
-    if teams_with_same_name:
-        raise HTTPException(status_code=400, detail=TEAM_WITH_NAME_EXISTS)
     
