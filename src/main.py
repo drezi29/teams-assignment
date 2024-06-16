@@ -29,7 +29,7 @@ def read_experiments(
     db: Session = Depends(get_db)
 ):
     
-    experiments = crud.experiment.get_experiments(team_name, limit, db)
+    experiments = crud.experiment.get_experiments(db, team_name, limit)
     if not experiments:
         response.status_code = status.HTTP_204_NO_CONTENT
         return []

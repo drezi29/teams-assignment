@@ -20,7 +20,7 @@ from ..models import Experiment, Team
 from ..config import MIN_ALLOWED_TEAMS, MAX_ALLOWED_TEAMS
 
 
-def get_experiments(team_name: str | None, limit: int | None, db: Session):
+def get_experiments(db: Session, team_name: str | None, limit: int | None):
     query = (
         db.query(Experiment)
         .join(Experiment.teams)
