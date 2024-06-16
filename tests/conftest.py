@@ -2,11 +2,10 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 from typing import Any, Generator
 import pytest
-import uuid
 
+from .utils import get_random_id
 from src.database import Base
 from src.main import app, get_db
 from src.models import Experiment, Team
@@ -88,6 +87,3 @@ def create_basic_records(db_session):
 
     yield team_parent, team_child, team_without_parent, experiment1, experiment2
 
-
-def get_random_id() -> uuid.UUID:
-    return uuid.uuid4()
