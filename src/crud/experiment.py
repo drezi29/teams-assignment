@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import or_
+from sqlalchemy import asc, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, Session
 import uuid
@@ -28,6 +28,7 @@ def get_experiments(team_name: str | None, limit: int | None, db: Session):
             joinedload(Experiment.teams)
             .load_only(Team.id, Team.name)
         )
+        .order_by(asc(Experiment.description))
     )
     
     if team_name:

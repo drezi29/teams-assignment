@@ -1,6 +1,6 @@
 import uuid
 
-
+TEST_EXPERIMENT_DESCRIPTION = "Test Experiment"
 TEST_TEAM_NAME = "Test Team"
 TEST_TEAM_PARENT_NAME = "Team parent"
 TEST_TEAM_CHILD_NAME = "Team child"

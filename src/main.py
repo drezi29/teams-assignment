@@ -38,14 +38,16 @@ def read_experiments(
 
 @app.post("/experiments/")
 def create_experiment(
+    response: Response,
     description: str = Body(...),
     sample_ratio: float = Body(...),
     allowed_team_assignments: int = Body(...),
     team_ids: List[UUID] = Body(...),
     db: Session = Depends(get_db)
 ):
-    
-    return crud.experiment.create_experiment(db, description, sample_ratio, allowed_team_assignments, team_ids)
+    experiment = crud.experiment.create_experiment(db, description, sample_ratio, allowed_team_assignments, team_ids)
+    response.status_code = status.HTTP_201_CREATED
+    return experiment
 
 
 @app.put("/experiments/{experiment_id}/teams")
