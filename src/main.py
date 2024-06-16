@@ -69,12 +69,14 @@ def read_teams(
 
 @app.post("/teams/")
 def create_team(
+    response: Response,
     name: str = Body(...),
     parent_team_id: UUID | None = Body(None),
     db: Session = Depends(get_db)
 ):
 
     team = crud.team.create_team(name, parent_team_id, db)
+    response.status_code = status.HTTP_201_CREATED
     return team
 
 
