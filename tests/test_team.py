@@ -20,14 +20,30 @@ def test_create_team_without_parent(test_client):
     assert response.status_code == 201
     assert data["message"] == TEAM_CREATED_SUCCESFULLY_MSG
 
+    get_teams_response = test_client.get("/teams/")
+    data_get = get_teams_response.json()
+
+    assert len(data_get) == 1
+    assert data_get[0]["name"] == TEST_TEAM_NAME
+    assert data_get[0]["parent_team"] == None
+
 
 def test_create_team_with_parent(test_client, create_basic_records):
-    (team_parent, *_) = create_basic_records
-    response_data = {"name": TEST_TEAM_NAME, "parent_team_id": str(team_parent.id)}
+    team_parent, *_ = create_basic_records
+    team_parent_id = str(team_parent.id)
+    
+    response_data = {"name": TEST_TEAM_NAME, "parent_team_id": team_parent_id}
     response = test_client.post("/teams/", json=response_data)
     assert response.status_code == 201
     data = response.json()
     assert data["message"] == TEAM_CREATED_SUCCESFULLY_MSG
+
+    get_teams_response = test_client.get("/teams/")
+    data_get = get_teams_response.json()
+
+    assert len(data_get) == 4
+    assert data_get[-1]["name"] == TEST_TEAM_NAME
+    assert data_get[-1]["parent_team"] == team_parent_id
 
 
 def test_create_team_with_not_existing_parent(test_client):
@@ -52,7 +68,7 @@ def test_get_teams_without_data(test_client):
 
 
 def test_get_teams_with_data(test_client, create_basic_records):
-    (team_parent, *_) = create_basic_records
+    team_parent, *_ = create_basic_records
     response = test_client.get("/teams/")
     assert response.status_code == 200
     data = response.json()
