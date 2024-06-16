@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy import asc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload, Session
 import uuid
@@ -19,6 +20,7 @@ def get_teams(limit: int, db: Session):
             selectinload(Team.experiments)
             .load_only(Experiment.id, Experiment.description)
         )
+        .order_by(asc(Team.name))
         .limit(limit)
         .all()
     )

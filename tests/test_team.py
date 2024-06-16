@@ -57,9 +57,9 @@ def test_get_teams_with_data(test_client, create_basic_records):
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 3
-    assert data[0]["name"] == TEST_TEAM_PARENT_NAME
-    assert data[0]["parent_team"] == None
-    assert data[1]["name"] == TEST_TEAM_CHILD_NAME
-    assert data[1]["parent_team"] == str(team_parent.id)
+    assert data[0]["name"] == TEST_TEAM_CHILD_NAME
+    assert data[0]["parent_team"] == str(team_parent.id)
+    assert data[1]["name"] == TEST_TEAM_PARENT_NAME
+    assert data[1]["parent_team"] == None
     assert data[2]["name"] == TEST_TEAM_WITHOUT_PARENT_NAME
     assert data[2]["parent_team"] == None

@@ -9,8 +9,7 @@ from .utils import get_random_id
 from .utils import (
     TEST_TEAM_PARENT_NAME,
     TEST_TEAM_CHILD_NAME,
-    TEST_TEAM_WITHOUT_PARENT_NAME
-    )
+    TEST_TEAM_WITHOUT_PARENT_NAME)
 from src.database import Base
 from src.main import app, get_db
 from src.models import Experiment, Team
