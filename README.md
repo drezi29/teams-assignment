@@ -32,7 +32,7 @@ pip install --upgrade pip
 
 Install the required Python packages:
 
-```bash 
+```bash
 pip install -r requirements.txt
 ```
 
@@ -78,7 +78,7 @@ Open the PostgreSQL shell:
 psql postgres
 ```
 
-Then, create a new role named `fastapiapp` with login privileges and a password of `fastapiapp` and create 
+Then, create a new role named `fastapiapp` with login privileges and a password of `fastapiapp` and create
 
 ```sql
 CREATE ROLE fastapiapp WITH LOGIN PASSWORD 'fastapiapp';

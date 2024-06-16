@@ -1,24 +1,23 @@
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from typing import Any, Generator
-import pytest
 
-from .utils import get_random_id
-from .utils import (
-    TEST_TEAM_PARENT_NAME,
-    TEST_TEAM_CHILD_NAME,
-    TEST_TEAM_WITHOUT_PARENT_NAME)
 from src.database import Base
 from src.main import app, get_db
 from src.models import Experiment, Team
 
+from .utils import (
+    TEST_TEAM_CHILD_NAME,
+    TEST_TEAM_PARENT_NAME,
+    TEST_TEAM_WITHOUT_PARENT_NAME,
+    get_random_id,
+)
+
 TEST_DATABASE_URL = "postgresql://postgres:postgres@localhost/test_db"
 
-engine = create_engine(
-    TEST_DATABASE_URL
-)
+engine = create_engine(TEST_DATABASE_URL)
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -51,10 +50,13 @@ def test_client(db_session):
     with TestClient(app) as test_client:
         yield test_client
 
+
 @pytest.fixture(scope="function")
 def create_basic_records(db_session):
     team_parent = Team(id=get_random_id(), name=TEST_TEAM_PARENT_NAME)
-    team_child = Team(id=get_random_id(), name=TEST_TEAM_CHILD_NAME, parent_team=team_parent.id)
+    team_child = Team(
+        id=get_random_id(), name=TEST_TEAM_CHILD_NAME, parent_team=team_parent.id
+    )
     team_without_parent = Team(id=get_random_id(), name=TEST_TEAM_WITHOUT_PARENT_NAME)
 
     db_session.add(team_parent)
@@ -71,13 +73,13 @@ def create_basic_records(db_session):
         id=get_random_id(),
         description="Experiment 1",
         sample_ratio=0.5,
-        allowed_team_assignments=1
+        allowed_team_assignments=1,
     )
     experiment2 = Experiment(
         id=get_random_id(),
         description="Experiment 2",
         sample_ratio=0.8,
-        allowed_team_assignments=2
+        allowed_team_assignments=2,
     )
 
     db_session.add(experiment1)
@@ -90,4 +92,3 @@ def create_basic_records(db_session):
     db_session.refresh(experiment2)
 
     yield team_parent, team_child, team_without_parent, experiment1, experiment2
-
