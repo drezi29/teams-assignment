@@ -6,7 +6,7 @@ from uuid import UUID
 from . import crud, models
 from .crud.team import create_team, get_teams 
 from .crud.experiment import create_experiment, get_experiments, update_assignments
-from .database import SessionLocal, engine
+from .database import engine, SessionLocal
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -76,3 +76,8 @@ def create_team(
 
     team = crud.team.create_team(name, parent_team_id, db)
     return team
+
+
+@app.get("/")
+async def read_main():
+    return {"message": "Team assignments app"}
