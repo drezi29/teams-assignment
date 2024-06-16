@@ -1,9 +1,12 @@
 from .utils import (
-    TEST_EXPERIMENT_DESCRIPTION
+    TEST_EXPERIMENT_DESCRIPTION,
+    TEST_TEAM_WITHOUT_PARENT_NAME,
+    TEST_TEAM_CHILD_NAME
     )
 from src.main import app
 from src.messages import (
-    EXPERIMENT_CREATED_SUCCESSFULLY_MSG
+    EXPERIMENT_CREATED_SUCCESSFULLY_MSG,
+    TEAM_BY_NAME_NOT_FOUND_ERROR
 )
 
 def test_create_experiment(test_client, create_basic_records):
@@ -46,7 +49,7 @@ def test_get_experiments_without_data(test_client):
 
 
 def test_get_teams_with_data(test_client, create_basic_records):
-    (team_parent, team_child, team_without_parent, experiment1, experiment2) = create_basic_records
+    team_parent, team_child, team_without_parent, experiment1, experiment2 = create_basic_records
     response = test_client.get("/experiments/")
     assert response.status_code == 200
 
@@ -63,3 +66,39 @@ def test_get_teams_with_data(test_client, create_basic_records):
     assert data[1]["allowed_team_assignments"] == experiment2.allowed_team_assignments
     experiment2_teams = data[1]["teams"]
     assert len(experiment2_teams) == 2
+
+
+def test_get_teams_with_filter(test_client, create_basic_records):
+    response = test_client.get(
+        "/experiments/", 
+        params={"team_name": TEST_TEAM_WITHOUT_PARENT_NAME}
+        )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    assert len(data[0]["teams"]) == 1
+    assert data[0]["teams"][0]["name"] == TEST_TEAM_WITHOUT_PARENT_NAME
+    assert len(data[1]["teams"]) == 2
+    assert data[1]["teams"][0]["name"] == TEST_TEAM_WITHOUT_PARENT_NAME
+
+
+def test_get_teams_with_filter_child_name(test_client, create_basic_records):
+    response = test_client.get(
+        "/experiments/", 
+        params={"team_name": TEST_TEAM_CHILD_NAME}
+        )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert len(data[0]["teams"]) == 2
+    assert data[0]["teams"][0]["name"] == TEST_TEAM_WITHOUT_PARENT_NAME
+
+
+def test_get_teams_with_filter_not_existing_name(test_client, create_basic_records):
+    response = test_client.get(
+        "/experiments/", 
+        params={"team_name": "Not existing team name"}
+        )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"] == TEAM_BY_NAME_NOT_FOUND_ERROR
