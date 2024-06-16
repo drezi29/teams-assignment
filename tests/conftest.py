@@ -6,6 +6,11 @@ from typing import Any, Generator
 import pytest
 
 from .utils import get_random_id
+from .utils import (
+    TEST_TEAM_PARENT_NAME,
+    TEST_TEAM_CHILD_NAME,
+    TEST_TEAM_WITHOUT_PARENT_NAME
+    )
 from src.database import Base
 from src.main import app, get_db
 from src.models import Experiment, Team
@@ -49,9 +54,9 @@ def test_client(db_session):
 
 @pytest.fixture(scope="function")
 def create_basic_records(db_session):
-    team_parent = Team(id=get_random_id(), name="Team parent")
-    team_child = Team(id=get_random_id(), name="Team child", parent_team=team_parent.id)
-    team_without_parent = Team(id=get_random_id(), name="Team without parent")
+    team_parent = Team(id=get_random_id(), name=TEST_TEAM_PARENT_NAME)
+    team_child = Team(id=get_random_id(), name=TEST_TEAM_CHILD_NAME, parent_team=team_parent.id)
+    team_without_parent = Team(id=get_random_id(), name=TEST_TEAM_WITHOUT_PARENT_NAME)
 
     db_session.add(team_parent)
     db_session.add(team_child)
