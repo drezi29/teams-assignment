@@ -148,7 +148,7 @@ def check_if_teams_exist(passed_team_ids: set[str], existing_teams_ids: set[str]
             )
 
 
-def check_parent_child_relationship_in_assignment(teams: list[Team], teams_ids: set[str]):
+def  check_parent_child_relationship_in_assignment(teams: list[Team], teams_ids: set[str]):
     for team in teams:
         if str(team.parent_team) in teams_ids:
             raise HTTPException(

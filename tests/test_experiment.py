@@ -1,3 +1,4 @@
+from .utils import get_random_id
 from .utils import (
     TEST_EXPERIMENT_DESCRIPTION,
     TEST_TEAM_WITHOUT_PARENT_NAME,
@@ -5,9 +6,16 @@ from .utils import (
     )
 from src.main import app
 from src.messages import (
+    ASSIGNMENTS_UPDATED_MSG,
+    CANNOT_ASSIGN_CHILD_WITH_PARENT_TO_EXPERIMENT_ERROR,
     EXPERIMENT_CREATED_SUCCESSFULLY_MSG,
-    TEAM_BY_NAME_NOT_FOUND_ERROR
+    EXPERIMENT_NOT_FOUND_ERROR,
+    TEAM_BY_NAME_NOT_FOUND_ERROR,
+    VALUE_OF_ALLOWED_TEAM_ASSIGNMNETS_RANGE_ERROR,
+    INVALID_ASSIGNMENTS_AMOUNT,
+    TEAMS_NOT_FOUND
 )
+from src.config import MIN_ALLOWED_TEAMS, MAX_ALLOWED_TEAMS
 
 def test_create_experiment(test_client, create_basic_records):
     team_parent, *_ = create_basic_records
@@ -43,13 +51,91 @@ def test_create_experiment(test_client, create_basic_records):
     assert experiment_teams[0]["id"] == team_parent_id
 
 
+def test_create_experiment_validation_allowed_team_assignments(test_client, create_basic_records):
+    team_parent, *_ = create_basic_records
+    team_parent_id = str(team_parent.id)
+
+    sample_ratio = 0.5
+    allowed_team_assignments = MAX_ALLOWED_TEAMS + 1
+
+    response_data = {
+        "description": TEST_EXPERIMENT_DESCRIPTION,
+        "sample_ratio": sample_ratio,
+        "allowed_team_assignments": allowed_team_assignments,
+        "team_ids": [team_parent_id]
+    }
+    response = test_client.post("/experiments/", json=response_data)
+    assert response.status_code == 400
+    data = response.json()
+    assert data["detail"] == VALUE_OF_ALLOWED_TEAM_ASSIGNMNETS_RANGE_ERROR.format(
+                    min=MIN_ALLOWED_TEAMS, max=MAX_ALLOWED_TEAMS
+                    )
+
+
+def test_create_experiment_validation_of_assigned_teams(test_client, create_basic_records):
+    team_parent, *_ = create_basic_records
+    team_parent_id = str(team_parent.id)
+
+    sample_ratio = 0.5
+    allowed_team_assignments = 2
+
+    response_data = {
+        "description": TEST_EXPERIMENT_DESCRIPTION,
+        "sample_ratio": sample_ratio,
+        "allowed_team_assignments": allowed_team_assignments,
+        "team_ids": [team_parent_id]
+    }
+    response = test_client.post("/experiments/", json=response_data)
+    assert response.status_code == 400
+    data = response.json()
+    assert data["detail"] == INVALID_ASSIGNMENTS_AMOUNT.format(
+        allowed_assignments=allowed_team_assignments
+        )
+
+
+def test_create_experiment_validation_of_assigning_team_existence(test_client):
+    sample_ratio = 0.5
+    allowed_team_assignments = 1
+    team_ids = [str(get_random_id())]
+
+    response_data = {
+        "description": TEST_EXPERIMENT_DESCRIPTION,
+        "sample_ratio": sample_ratio,
+        "allowed_team_assignments": allowed_team_assignments,
+        "team_ids": team_ids
+    }
+    response = test_client.post("/experiments/", json=response_data)
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"] == TEAMS_NOT_FOUND.format(ids=set(team_ids))
+
+
+def test_create_experiment_validation_of_assigning_team_and_its_child(test_client, create_basic_records):
+    team_parent, team_child, team_without_parent, experiment1, experiment2 = create_basic_records
+    sample_ratio = 0.5
+    allowed_team_assignments = 2
+    team_parent_id = str(team_parent.id)
+    team_child_id = str(team_child.id)
+
+    response_data = {
+        "description": TEST_EXPERIMENT_DESCRIPTION,
+        "sample_ratio": sample_ratio,
+        "allowed_team_assignments": allowed_team_assignments,
+        "team_ids": [team_parent_id, team_child_id]
+    }
+    response = test_client.post("/experiments/", json=response_data)
+    assert response.status_code == 400
+    data = response.json()
+    assert data["detail"] == CANNOT_ASSIGN_CHILD_WITH_PARENT_TO_EXPERIMENT_ERROR
+
+
 def test_get_experiments_without_data(test_client):
     response = test_client.get("/experiments/")
     assert response.status_code == 204
 
 
 def test_get_teams_with_data(test_client, create_basic_records):
-    team_parent, team_child, team_without_parent, experiment1, experiment2 = create_basic_records
+    *_, experiment1, experiment2 = create_basic_records
     response = test_client.get("/experiments/")
     assert response.status_code == 200
 
@@ -101,4 +187,30 @@ def test_get_teams_with_filter_not_existing_name(test_client, create_basic_recor
         )
     assert response.status_code == 404
     data = response.json()
-    assert data["detail"] == TEAM_BY_NAME_NOT_FOUND_ERROR
+
+
+def test_update_assignments_positive_scenario(test_client, create_basic_records):
+    team_parent, team_child, team_without_parent, experiment1, experiment2 = create_basic_records
+    experiment_id = str(experiment1.id)
+    team_ids = [str(team_parent.id)]
+
+    params = {
+        "team_ids": team_ids
+    }
+    response = test_client.put(f"/experiments/{experiment_id}/teams", params=params)
+    data = response.json()
+    assert response.status_code == 200
+    assert data["message"] == ASSIGNMENTS_UPDATED_MSG
+
+
+def test_update_assignments_with_not_existing_experiment(test_client, create_basic_records):
+    team_parent, *_ = create_basic_records
+    team_ids = [str(team_parent.id)]
+    experiment_id = str(get_random_id())
+    params = {
+        "team_ids": team_ids
+    }
+    response = test_client.put(f"/experiments/{experiment_id}/teams", params=params)
+    data = response.json()
+    assert response.status_code == 404
+    assert data["detail"] == EXPERIMENT_NOT_FOUND_ERROR
