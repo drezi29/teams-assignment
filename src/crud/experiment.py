@@ -15,7 +15,6 @@ from ..messages import (
     INVALID_ASSIGNMENTS_AMOUNT,
     TEAM_BY_NAME_NOT_FOUND_ERROR,
     TEAMS_NOT_FOUND,
-    UNEXPECTED_ERROR,
     VALUE_OF_ALLOWED_TEAM_ASSIGNMNETS_RANGE_ERROR,
 )
 from ..models import Experiment, Team
@@ -74,9 +73,10 @@ def create_experiment(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=UNEXPECTED_ERROR)
+        error_info = str(e.orig)
+        raise HTTPException(status_code=400, detail=f"IntegrityError occurred: {error_info}")
 
     db.refresh(db_experiment)
 
@@ -117,9 +117,10 @@ def update_assignments(db: Session, experiment_id: str, team_ids: list[str]):
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=UNEXPECTED_ERROR)
+        error_info = str(e.orig)
+        raise HTTPException(status_code=400, detail=f"IntegrityError occurred: {error_info}")
 
     return {"message": ASSIGNMENTS_UPDATED_MSG}
 

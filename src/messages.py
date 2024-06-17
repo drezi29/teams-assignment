@@ -13,7 +13,6 @@ TEAM_BY_NAME_NOT_FOUND_ERROR = "Team with this name not found"
 TEAM_CREATED_SUCCESFULLY_MSG = "Team created successfully"
 TEAMS_NOT_FOUND = "Team(s) not found: {ids}"
 TEAM_WITH_NAME_EXISTS = "Team with the same name already exists"
-UNEXPECTED_ERROR = "Unexpected error occured"
 VALUE_OF_ALLOWED_TEAM_ASSIGNMNETS_RANGE_ERROR = (
     "Value of allowed team assignments has to be between {min} and {max}."
 )
