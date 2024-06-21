@@ -1,4 +1,7 @@
 import pytest
+import os
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -15,7 +18,9 @@ from .utils import (
     get_random_id,
 )
 
-TEST_DATABASE_URL = "postgresql://postgres:postgres@localhost/test_db"
+load_dotenv()
+
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 
 engine = create_engine(TEST_DATABASE_URL)
 
